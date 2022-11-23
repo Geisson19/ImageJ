@@ -564,7 +564,7 @@ public abstract class ImageProcessor implements Cloneable {
 		}
 		cm = new IndexColorModel(8, 256, rLUT2, gLUT2, bLUT2);
 	}
-	
+
 	/** Automatically sets the lower and upper threshold levels, where 'method'
 	 * must be "Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li",
 	 * "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu",
@@ -633,19 +633,29 @@ public abstract class ImageProcessor implements Cloneable {
 		AutoThresholder thresholder = new AutoThresholder();
 		int threshold = thresholder.getThreshold(method, stats.histogram);
 		double lower, upper;
-		if (darkBackground) {
-			if (isInvertedLut())
-				{lower=0.0; upper=threshold;}
-			else
-				{lower=threshold+1; upper=255.0;}
-		} else {
-			if (isInvertedLut())
-				{lower=threshold+1; upper=255.0;}
-			else
-				{lower=0.0; upper=threshold;}
-		}
+
+		double[] values = setLutByBackground(threshold, darkBackground);
+		lower = values[0];
+		upper = values[1];
+
 		if (lower>255) lower = 255;
 		scaleAndSetThreshold(lower, upper, lutUpdate);
+	}
+
+	public double[] setLutByBackground(int threshold, boolean darkBackground) {
+
+		double lower = 0;
+		double upper = 0;
+
+		if (isInvertedLut()){
+			lower=0.0;
+			upper=threshold;
+		} else {
+			lower=threshold+1;
+			upper=255.0;
+		}
+
+		return darkBackground ? new double[]{lower, upper} : new double[]{upper, lower};
 	}
 
 	/** Automatically sets the lower and upper threshold levels, where 'method'

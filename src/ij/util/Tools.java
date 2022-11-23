@@ -26,18 +26,6 @@ import java.security.MessageDigest;
 		return new String(buf7);
 	}
 
-	/** Converts a float to an 9 byte hex string starting with '#'. */
-	public static String f2hex(float f) {
-		int i = Float.floatToIntBits(f);
-		char[] buf9 = new char[9];
-		buf9[0] = '#';
-		for (int pos=8; pos>=1; pos--) {
-			buf9[pos] = hexDigits[i&0xf];
-			i >>>= 4;
-		}
-		return new String(buf9);
-	}
-
 	/** Converts an int to a zero-padded hex string of fixed length 'digits'.
 	 *  If the number is too high, it gets truncated, keeping only the lowest 'digits' characters. */
 	public static String int2hex(int i, int digits) {
@@ -74,6 +62,30 @@ import java.security.MessageDigest;
 			else if (value>max)
 				max = value;
 		}
+
+		return createArrayDouble(min, max);
+	}
+
+	private static int firstNotNan(float[] a) {
+		int i=0;
+		for (; i<a.length; i++)
+			if (!Float.isNaN(a[i]))
+				break;
+		return i;
+	}
+
+	private static double[] getLocalMinMax(float[] a, float min, float max, int i) {
+		for (; i < a.length; i++) {
+			float value = a[i];
+			if (value< min)
+				min = value;
+			else if (value> max)
+				max = value;
+		}
+		return createArrayDouble(min, max);
+	}
+
+	private static double[] createArrayDouble(double min, double max) {
 		double[] minAndMax = new double[2];
 		minAndMax[0] = min;
 		minAndMax[1] = max;
@@ -85,26 +97,17 @@ import java.security.MessageDigest;
 	public static double[] getMinMax(float[] a) {
 		float min = Float.NaN;
 		float max = Float.NaN;
-		int i=0;
-		for (; i<a.length; i++)
-			if (!Float.isNaN(a[i]))
-				break;
+		int i = firstNotNan(a);
+
 		if (i<a.length) {
 			min = a[i];
 			max = a[i];
 		}
-		for (; i<a.length; i++) {
-			float value = a[i];
-			if (value<min)
-				min = value;
-			else if (value>max)
-				max = value;
-		}
-		double[] minAndMax = new double[2];
-		minAndMax[0] = min;
-		minAndMax[1] = max;
-		return minAndMax;
+
+		return getLocalMinMax(a, min, max, i);
 	}
+
+
 
 	/** Converts the float array 'a' to a double array. */
 	public static double[] toDouble(float[] a) {
@@ -157,7 +160,9 @@ import java.security.MessageDigest;
 			return defaultValue;
 		try {
 			defaultValue = Double.parseDouble(s);
-		} catch (NumberFormatException e) {}
+		} catch (NumberFormatException e) {
+			//defaultValue = defaultValue;
+		}
 		return defaultValue;
 	}
 
@@ -242,9 +247,11 @@ import java.security.MessageDigest;
 				v.addElement(line);
 			}
 			br.close();
-		} catch(Exception e) { }
+		} catch(Exception e) {
+			throw new RuntimeException(e);
+		}
 		String[] lines = new String[v.size()];
-		v.copyInto((String[])lines);
+		v.copyInto(lines);
 		return lines;
 	}
 
@@ -259,11 +266,7 @@ import java.security.MessageDigest;
 			indexes[i] = Integer.valueOf(i);
 			data[i] = Double.valueOf(values[i]);
 		}
-		Arrays.sort(indexes, new Comparator<Integer>() {
-			public int compare(final Integer o1, final Integer o2) {
-				return data[o1].compareTo(data[o2]);
-			}
-		});
+		Arrays.sort(indexes, (o1, o2) -> data[o1].compareTo(data[o2]));
 		int[] indexes2 = new int[n];
 		for (int i=0; i<n; i++)
 			indexes2[i] = indexes[i].intValue();
@@ -276,11 +279,7 @@ import java.security.MessageDigest;
 		final Integer[] indexes = new Integer[n];
 		for (int i=0; i<n; i++)
 			indexes[i] = Integer.valueOf(i);
-		Arrays.sort(indexes, new Comparator<Integer>() {
-			public int compare(final Integer o1, final Integer o2) {
-				return data[o1].compareToIgnoreCase(data[o2]);
-			}
-		});
+		Arrays.sort(indexes, (o1, o2) -> data[o1].compareToIgnoreCase(data[o2]));
 		int[] indexes2 = new int[n];
 		for (int i=0; i<n; i++)
 			indexes2[i] = indexes[i].intValue();
@@ -340,9 +339,10 @@ import java.security.MessageDigest;
 			FileChannel channel1 = stream1.getChannel();
 			FileOutputStream stream2 = new FileOutputStream(f2);
 			final FileChannel channel2 = stream2.getChannel();
-			if (channel2!=null && channel1!=null )
+			if (channel1!=null ) {
 				channel2.transferFrom(channel1, 0, channel1.size());
-			channel1.close();
+				channel1.close();
+			}
 			stream1.close();
 			channel2.close();
 			stream2.close();
@@ -448,7 +448,7 @@ import java.security.MessageDigest;
 		boolean md5 = method.contains("MD5");
 		boolean sha_256 = method.contains("SHA-256");
 		try {
-			MessageDigest digest = null;
+			MessageDigest digest;
 			if (md5)
 				digest = MessageDigest.getInstance("MD5");
 			else if(sha_256)
@@ -470,8 +470,8 @@ import java.security.MessageDigest;
 
 	private static String bytesToHex(byte[] hash) {
 		StringBuilder hexString = new StringBuilder(2 * hash.length);
-		for (int i = 0; i < hash.length; i++) {
-			String hex = Integer.toHexString(0xff & hash[i]);
+		for (byte b : hash) {
+			String hex = Integer.toHexString(0xff & b);
 			if (hex.length() == 1) {
 				hexString.append('0');
 			}
