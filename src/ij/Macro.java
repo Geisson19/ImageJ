@@ -1,15 +1,11 @@
 package ij;
-import ij.process.*;
-import ij.gui.*;
-import ij.io.*;
-import ij.measure.*;
-import ij.plugin.filter.*;
+
+import ij.io.FileSaver;
+import ij.io.Opener;
 import ij.macro.Interpreter;
-import java.awt.*;
-import java.awt.image.*;
-import java.io.*;
-import java.util.Locale;
+
 import java.util.Hashtable;
+import java.util.Locale;
 
 /** The class contains static methods that perform macro operations. */
 public class Macro {
@@ -18,7 +14,7 @@ public class Macro {
 
 	// A table of Thread as keys and String as values, so  
 	// Macro options are local to each calling thread.
-	static private Hashtable table = new Hashtable();
+	static final private Hashtable table = new Hashtable();
 	static boolean abort;
 
 	public static boolean open(String path) {

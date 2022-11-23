@@ -45,7 +45,7 @@ public class Projector implements PlugIn {
 	private int depthCueInt = depthCueIntS;
 	private boolean interpolate = interpolateS;
 	private boolean allTimePoints = allTimePointsS;
-	
+
 	private boolean debugMode;
 	private double sliceInterval = 1.0; // pixels
 	private int transparencyLower = 1;
@@ -132,7 +132,7 @@ public class Projector implements PlugIn {
 		gd.addHelp(IJ.URL+"/docs/menus/image.html#project");
 		gd.showDialog();
 		if (gd.wasCanceled())
-			return false;;
+			return false;
 		projectionMethod = gd.getNextChoiceIndex();
 		axisOfRotation = gd.getNextChoiceIndex();
 		cal.pixelDepth = gd.getNextNumber();
@@ -426,8 +426,6 @@ public class Projector implements PlugIn {
 			}
 
 			theta = (theta + angleInc)%360;
-			//if (projections.getWindow()==null && IJ.getInstance()!=null && !batchMode)   // is "Projections" window still open?
-			//	{done=true; break;}
 			if (IJ.escapePressed()) {
 				done=true;
 				IJ.beep();
