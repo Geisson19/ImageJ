@@ -1,7 +1,7 @@
 package ij.plugin;
 import java.awt.*;
 import java.io.*;
-import java.text.DecimalFormat;	
+import java.text.DecimalFormat;
 import java.util.*;
 import ij.*;
 import ij.io.*;
