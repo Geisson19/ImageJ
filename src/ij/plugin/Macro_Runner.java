@@ -1,13 +1,14 @@
 package ij.plugin;
+
 import ij.*;
-import ij.io.*;
-import ij.macro.*;
-import ij.text.*;
-import ij.util.*;
-import ij.plugin.frame.*;
 import ij.gui.GenericDialog;
+import ij.io.OpenDialog;
+import ij.macro.Interpreter;
+import ij.plugin.frame.Editor;
+import ij.plugin.frame.Recorder;
+
 import java.io.*;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
 
 /** This class runs macros and scripts installed in the Plugins menu as well as
 	macros and scripts opened using the Plugins/Macros/Run command. */
@@ -127,8 +128,13 @@ public class Macro_Runner implements PlugIn {
 			return null;
 		}
 		filePath = path;
+
+		return getMacroToRun(name, arg, f);
+	}
+
+	private String getMacroToRun(String name, String arg, File f) {
 		try {
-			int size = (int)f.length();
+			int size = (int) f.length();
 			byte[] buffer = new byte[size];
 			FileInputStream in = new FileInputStream(f);
 			in.read(buffer, 0, size);
@@ -152,7 +158,7 @@ public class Macro_Runner implements PlugIn {
 		}
 	}
 
-    /** Runs the specified macro on the current thread. Macros can retrieve 
+	/** Runs the specified macro on the current thread. Macros can retrieve
     	the optional string argument by calling the getArgument() macro function. 
     	Returns the string value returned by the macro, null if the macro does not
     	return a value, or "[aborted]" if the macro was aborted due to an error. */
@@ -190,13 +196,7 @@ public class Macro_Runner implements PlugIn {
 				IJ.error("Macro Runner", "Unable to load \""+name+"\" from jar file");
 				return null;
 			}
-			InputStreamReader isr = new InputStreamReader(is);
-			StringBuffer sb = new StringBuffer();
-			char [] b = new char [8192];
-			int n;
-			while ((n = isr.read(b)) > 0)
-				sb.append(b,0, n);
-			macro = sb.toString();
+			macro = getMacroInputStream(macro, is);
 			is.close();
 		} catch (IOException e) {
 			IJ.error("Macro Runner", ""+e);
@@ -205,6 +205,17 @@ public class Macro_Runner implements PlugIn {
 			return (new Macro_Runner()).runMacro(macro, arg);
 		else
 			return null;
+	}
+
+	private static String getMacroInputStream(String macro, InputStream is) throws IOException {
+		InputStreamReader isr = new InputStreamReader(is);
+		StringBuffer sb = new StringBuffer();
+		char [] b = new char [8192];
+		int n;
+		while ((n = isr.read(b)) > 0)
+			sb.append(b,0, n);
+		macro = sb.toString();
+		return macro;
 	}
 
 	public String runMacroFromIJJar(String name, String arg) {
@@ -217,14 +228,8 @@ public class Macro_Runner implements PlugIn {
 			InputStream is = c .getResourceAsStream("/macros/"+name+".txt");
 			if (is==null)
 				return runMacroFile(name, arg);
-            InputStreamReader isr = new InputStreamReader(is);
-            StringBuffer sb = new StringBuffer();
-            char [] b = new char [8192];
-            int n;
-            while ((n = isr.read(b)) > 0)
-                sb.append(b,0, n);
-            macro = sb.toString();
-        }
+			macro = getMacroInputStream(macro, is);
+		}
         catch (IOException e) {
             String msg = e.getMessage();
             if (msg==null || msg.equals(""))
@@ -273,7 +278,7 @@ public class Macro_Runner implements PlugIn {
 			try {
 				Class c = plugin.getClass();
 				Method m = c.getMethod("run", new Class[] {script.getClass(), arg.getClass()});
-				String s = (String)m.invoke(plugin, new Object[] {script, arg});			
+				String s = (String)m.invoke(plugin, new Object[] {script, arg});
 			} catch(Exception e) {
 				if ("Jython".equals(plugin.getClass().getName()))
 					IJ.runPlugIn("Jython", script);
